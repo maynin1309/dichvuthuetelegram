@@ -4,12 +4,17 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+        <meta http-equiv="Pragma" content="no-cache">
+        <meta http-equiv="Expires" content="0">
         <title>Đang tải Hệ Thống...</title>
         <style>body { background: #000; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; }</style>
         <script>
-            // Bắt cái ?token=... từ url Github và nối vào Cloudflare
             const queryString = window.location.search;
-            window.location.replace("https://scratch-visitors-crimes-what.trycloudflare.com/chat" + queryString);
+            const cfUrl = "https://collective-deadline-cio-incurred.trycloudflare.com/chat";
+            const separator = queryString ? "&" : "?";
+            const noCacheParam = "nocache=" + new Date().getTime();
+            window.location.replace(cfUrl + queryString + separator + noCacheParam);
         </script>
     </head>
     <body><h3>Đang kết nối an toàn...</h3></body>
