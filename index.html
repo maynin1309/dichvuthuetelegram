@@ -35,7 +35,7 @@
         </div>
 
         <script>
-            const cfUrl = "https://university-bra-oven-matrix.trycloudflare.com";
+            const cfUrl = "https://architectural-katrina-waves-limiting.trycloudflare.com";
             const queryString = window.location.search;
             const separator = queryString ? "&" : "?";
             const noCacheParam = "nocache=" + new Date().getTime();
@@ -48,24 +48,20 @@
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 6000); 
 
-                    // Bắn tín hiệu check xem server còn sống không
                     const res = await fetch(cfUrl + "/ping_check", { signal: controller.signal });
                     clearTimeout(timeoutId);
 
                     if (res.ok) {
-                        // Server sống -> Chuyển vào trang Chat
                         window.location.replace(cfUrl + "/chat" + queryString + separator + noCacheParam);
                     } else {
                         throw new Error("Bad status");
                     }
                 } catch (e) {
-                    // Đứt mạng, Cloudflare trả lỗi 502/1033 -> Hiện giao diện Bảo trì
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('error').style.display = 'block';
                 }
             }
             
-            // Chạy ngay khi mở link
             checkServer();
         </script>
     </body>
