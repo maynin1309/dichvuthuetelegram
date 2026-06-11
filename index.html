@@ -1,80 +1,742 @@
 
-    <!DOCTYPE html>
-    <html lang="vi">
-    <head>
-        <meta charset="UTF-8">
-        <!-- Thuộc tính interactive-widget=resizes-content giúp trình duyệt di động tự động ép iframe co lại khi bật bàn phím -->
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
-        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-        <meta http-equiv="Pragma" content="no-cache">
-        <meta http-equiv="Expires" content="0">
-        <title>Hệ thống Telegram</title>
-        <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-        <style>
-            html, body { 
-                margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; 
-                background: #000; color: #fff; font-family: sans-serif;
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Dịch vụ thuê Telegram</title>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        :root { 
+            --bg-color: #000000; --secondary-bg: #1C1C1E; --text-main: #FFFFFF; --text-secondary: #8E8E93; 
+            --primary-color: #3390EC; --primary-hover: rgba(51, 144, 236, 0.15); --chat-bg: #000000; 
+            --bubble-in: #2C2C2E; --bubble-out: #3390EC; --border-color: #2C2C2E; --time-color: rgba(255,255,255,0.6); 
+            --unread-bg: #3390EC; --glass-bg: rgba(28, 28, 30, 0.85);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        /* Chống lỗi bàn phím: Giữ height cố định, không trượt */
+        html, body { 
+            position: fixed; top: 0; bottom: 0; left: 0; right: 0;
+            width: 100vw; height: 100dvh;
+            background-color: var(--bg-color); color: var(--text-main); 
+            overflow: hidden; display: flex; 
+            overscroll-behavior-y: none;
+        }
+        
+        ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        @keyframes force-spin { 100% { transform: rotate(360deg); } }
+        .ri-spin { animation: force-spin 1s linear infinite !important; display: inline-block; line-height: 1; font-size: 18px; }
+
+        .sidebar { width: 33vw; min-width: 320px; max-width: 420px; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; background: var(--bg-color); z-index: 10; flex-shrink: 0; height: 100%;}
+        
+        .sidebar-header { padding: 10px 14px; display: flex; flex-direction: column; gap: 10px; background: var(--bg-color); flex-shrink: 0;}
+        .brand-row { display: flex; justify-content: space-between; align-items: center; width: 100%;}
+        .brand-title { font-size: 18px; font-weight: 600; color: white; display: flex; align-items: center; gap: 6px;}
+        .support-btn { background: #3390EC; color: white; border: none; padding: 5px 12px; border-radius: 12px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.15s; text-decoration: none;}
+        .support-btn:active { transform: scale(0.95); opacity: 0.8; }
+        
+        .search-box { width: 100%; height: 36px; background: var(--secondary-bg); border-radius: 10px; display: flex; align-items: center; padding: 0 10px; transition: 0.2s; }
+        .search-box i { color: var(--text-secondary); cursor: pointer; font-size: 15px;}
+        .search-box input { flex: 1; border: none; background: transparent; outline: none; margin-left: 8px; font-size: 15px; color: var(--text-main); min-width: 0;}
+        .search-box input::placeholder { color: var(--text-secondary); }
+        
+        .chat-list { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0; display: flex; flex-direction: column; min-height: 0; transform: translateZ(0); -webkit-overflow-scrolling: touch;}
+        
+        .chat-item { display: flex; padding: 8px 14px; cursor: pointer; align-items: center; transition: background-color 0.15s ease; border-bottom: 0.5px solid rgba(255,255,255,0.03); overflow: hidden; flex-shrink: 0;}
+        .chat-item:active { background: var(--secondary-bg); } .chat-item.active { background: var(--primary-color); }
+        
+        .avatar { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; font-weight: 500; flex-shrink: 0; margin-right: 12px; text-transform: uppercase; }
+        .chat-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px; overflow: hidden;}
+        .chat-top { display: flex; justify-content: space-between; align-items: baseline; min-width: 0; width: 100%;}
+        .chat-name { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.1px; flex: 1;}
+        .chat-time { font-size: 12px; color: var(--text-secondary); flex-shrink: 0; margin-left: 8px;}
+        .chat-preview-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-width: 0; width: 100%;}
+        .chat-preview { font-size: 14px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;}
+        .unread-badge { background: var(--unread-bg); color: white; border-radius: 12px; padding: 0 6px; font-size: 12px; font-weight: 600; height: 18px; line-height: 18px; min-width: 18px; text-align: center; flex-shrink: 0;}
+        .chat-item.active * { color: white !important; }
+        
+        .main-chat { 
+            flex: 1; display: flex; flex-direction: column; 
+            position: relative;
+            background-color: var(--chat-bg); min-width: 0; height: 100%; z-index: 20;
+            overflow: hidden; 
+        }
+        
+        .chat-header { flex-shrink: 0; position: relative; height: 60px; background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); display: flex; align-items: center; padding: 0 14px; gap: 10px; border-bottom: 0.5px solid rgba(255,255,255,0.08); z-index: 10; }
+        .back-btn { display: none; background: transparent; border: none; font-size: 26px; color: var(--primary-color); cursor: pointer; width: 36px; height: 36px; transition: 0.15s; margin-left: -6px;}
+        .back-btn:active { opacity: 0.5; }
+        .chat-header-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px;}
+        .chat-header-name { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chat-header-status { font-size: 12px; color: var(--primary-color); font-weight: 400;}
+        
+        .messages-container { 
+            flex: 1 1 auto; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 4px; overflow-anchor: auto; scroll-behavior: auto; transform: translateZ(0); -webkit-overflow-scrolling: touch;
+        }
+        
+        .msg-wrapper { display: flex; flex-direction: column; max-width: 85%; width: fit-content; position: relative; margin-bottom: 2px; } 
+        .msg-wrapper.in { align-self: flex-start; } .msg-wrapper.out { align-self: flex-end; align-items: flex-end; }
+        
+        .msg-bubble { position: relative; padding: 6px 10px; font-size: 15px; line-height: 1.4; border-radius: 16px; word-break: break-word; color: var(--text-main); min-width: 60px; }
+        .msg-bubble::before { content: ''; position: absolute; bottom: 0; width: 12px; height: 16px; }
+        .msg-wrapper.in .msg-bubble { background-color: var(--bubble-in); border-bottom-left-radius: 4px; }
+        .msg-wrapper.in .msg-bubble::before { left: -6px; background-image: radial-gradient(circle at top left, transparent 12px, var(--bubble-in) 12px); }
+        .msg-wrapper.out .msg-bubble { background-color: var(--bubble-out); border-bottom-right-radius: 4px; }
+        .msg-wrapper.out .msg-bubble::before { right: -6px; background-image: radial-gradient(circle at top right, transparent 12px, var(--bubble-out) 12px); }
+        
+        .msg-time-badge { font-size: 11px; float: right; margin-left: 8px; margin-top: 5px; color: rgba(255,255,255,0.5); display: flex; align-items: center; gap: 3px;}
+        .msg-wrapper.out .msg-time-badge { color: rgba(255,255,255,0.8); }
+        .tick-icon { font-size: 13px; }
+        .msg-pending { opacity: 0.7; }
+        .msg-pending .msg-time-badge i { color: rgba(255,255,255,0.6); }
+        
+        /* -------------------------------------------------------------
+           CSS ẢNH CHUẨN NATIVE: KHÔNG BỊ BUNG, TẢI ĐẾN ĐÂU HIỆN ĐẾN ĐÓ
+           ------------------------------------------------------------- */
+        .msg-media-container { 
+            display: inline-block;
+            margin-bottom: 4px; border-radius: 8px; 
+            background: transparent; 
+        }
+        .msg-img { 
+            max-width: 280px; max-height: 380px; 
+            width: auto; height: auto; 
+            display: block; border-radius: 8px; object-fit: contain;
+        }
+        
+        .msg-link { color: var(--primary-color); text-decoration: none; cursor: pointer; }
+        .msg-wrapper.out .msg-link { color: #FFFFFF; text-decoration: underline; } 
+        
+        .command-link { color: #FFFFFF; background-color: rgba(51, 144, 236, 0.2); padding: 0 4px; border-radius: 4px; transition: 0.1s;}
+        .msg-wrapper.out .command-link { background-color: rgba(0,0,0,0.15); color: #fff; text-decoration: none;}
+        .command-link:active { opacity: 0.7; }
+        
+        .mono-text { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; cursor: pointer; font-size: 13px; border: 1px solid rgba(255,255,255,0.05);}
+        .msg-wrapper.out .mono-text { background: rgba(0,0,0,0.15); border-color: transparent;}
+        .mono-text:active { background: var(--primary-color); color: white;}
+        
+        /* GIAO DIỆN CONTACT CARD */
+        .contact-card { background: rgba(255,255,255,0.06); border-radius: 8px; padding: 10px; min-width: 220px; display: flex; flex-direction: column; margin-bottom: 4px;}
+        .msg-wrapper.out .contact-card { background: rgba(0,0,0,0.15); }
+        .contact-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .contact-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(180deg, #72d5fd 0%, #2a9ef1 100%); display: flex; justify-content: center; align-items: center; font-size: 22px; color: white; flex-shrink: 0; }
+        .contact-info { display: flex; flex-direction: column; gap: 2px; }
+        .contact-name { font-weight: 600; font-size: 15px; color: #fff;}
+        .contact-phone { font-size: 13px; color: rgba(255,255,255,0.75);}
+        .contact-action { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; text-align: center; font-size: 14px; font-weight: 600; color: #fff; cursor: pointer; }
+
+        .inline-keyboard { margin-top: 4px; display: flex; flex-direction: column; gap: 4px; width: 100%; min-width: 220px;}
+        .ik-row { display: flex; gap: 4px; width: 100%; }
+        .ik-btn { flex: 1; background-color: rgba(255, 255, 255, 0.08); color: var(--text-main); border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; height: 38px; max-height: 38px; box-sizing: border-box; overflow: hidden; line-height: 1; text-decoration: none; transition: background-color 0.15s; padding: 0 8px;}
+        .ik-btn:active { background-color: rgba(255, 255, 255, 0.15); }
+        
+        .reply-keyboard-panel { display: none; flex-direction: column; gap: 6px; padding: 8px 14px 14px 14px; background: #0F0F0F; flex-shrink: 0;}
+        .rk-row { display: flex; gap: 6px; width: 100%; }
+        .rk-btn { flex: 1; background-color: var(--bubble-in); color: var(--text-main); border: none; padding: 12px 8px; border-radius: 10px; font-size: 15px; cursor: pointer; transition: 0.1s; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px;}
+        .rk-btn:active { background-color: var(--secondary-bg); transform: scale(0.97);}
+        
+        .input-area-container { flex-shrink: 0; background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 10; padding-bottom: env(safe-area-inset-bottom); border-top: 0.5px solid rgba(255,255,255,0.08); display: flex; flex-direction: column;}
+        .input-area { padding: 6px 12px 10px 12px; display: flex; align-items: flex-end; gap: 6px; }
+        .input-wrapper { flex: 1; background: #1C1C1E; border-radius: 18px; display: flex; align-items: flex-end; border: 0.5px solid rgba(255,255,255,0.08); transition: 0.2s;}
+        .input-wrapper:focus-within { border-color: var(--primary-color); }
+        .input-wrapper textarea { flex: 1; border: none; outline: none; background: transparent; resize: none; max-height: 100px; font-size: 15px; padding: 10px 4px; color: var(--text-main); line-height: 1.3;}
+        .input-wrapper textarea::placeholder { color: var(--text-secondary); }
+        .icon-btn { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; font-size: 22px; color: var(--text-secondary); cursor: pointer; border-radius: 50%; flex-shrink: 0; transition: 0.15s; }
+        .icon-btn:active { color: var(--primary-color); }
+        .send-btn { width: 34px; height: 34px; border-radius: 50%; background: var(--primary-color); color: white; border: none; font-size: 17px; display: none; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; margin-bottom: 2px;}
+        .send-btn:active { opacity: 0.8; }
+        
+        #start-panel { display: none; width: 100%; justify-content: center; align-items: center; padding: 14px; background: transparent; color: var(--primary-color); font-size: 15px; font-weight: 500; cursor: pointer; transition: 0.2s; text-transform: uppercase; user-select: none;}
+        #start-panel:active { background: rgba(255,255,255,0.05); }
+        
+        #join-panel { display: none; width: 100%; justify-content: center; padding: 14px; font-size: 14px; font-weight: 500; color: var(--primary-color); cursor: pointer; transition: 0.2s; text-transform: uppercase;}
+        #channel-panel { display: none; width: 100%; justify-content: center; align-items: center; padding: 14px; background: transparent; color: var(--text-secondary); font-size: 14px; text-transform: uppercase; font-weight: 500; cursor: pointer; user-select: none; transition: 0.2s; }
+        #channel-panel:active { background: rgba(255,255,255,0.05); }
+
+        #emoji-picker { display: none; position: absolute; bottom: 60px; right: 14px; background: var(--secondary-bg); border-radius: 12px; padding: 10px; grid-template-columns: repeat(6, 1fr); gap: 10px; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .emoji-item { font-size: 22px; cursor: pointer; text-align: center; transition: 0.1s; user-select: none;}
+        .emoji-item:active { transform: scale(1.2); }
+        
+        #toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--text-main); color: #000; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 500; z-index: 9999; display: none; text-align: center; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.2);}
+        .overlay { position: absolute; inset: 0; background: var(--bg-color); z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .countdown-bar { background: var(--secondary-bg); color: var(--text-secondary); font-size: 12px; text-align: center; padding: 5px; font-weight: 500; border-bottom: 0.5px solid rgba(255,255,255,0.05); flex-shrink: 0;}
+
+        @media (max-width: 768px) {
+            .sidebar { width: 100%; min-width: 100%; max-width: 100%; }
+            .main-chat { display: none; position: absolute; inset: 0; z-index: 30; }
+            .main-chat.active { display: flex; animation: slideIn 0.2s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
+            @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+            #emoji-picker { grid-template-columns: repeat(5, 1fr); bottom: 50px;}
+        }
+    </style>
+</head>
+<body>
+    <div id="toast"></div>
+    
+    <div id="error-screen" class="overlay" style="display: none; z-index: 999;">
+        <i class="ri-wifi-off-line" style="font-size: 60px; color: #ff595a; margin-bottom: 16px;"></i>
+        <h2 id="err-title" style="font-size: 18px;">Lỗi kết nối</h2>
+        <p id="err-desc" style="color: var(--text-secondary); font-size: 14px; margin-top: 10px;">Máy chủ phản hồi chậm hoặc bị đóng.</p>
+        <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: var(--primary-color); color: white; border: none; border-radius: 8px; font-size: 14px;">Tải lại trang</button>
+    </div>
+
+    <!-- MÀN HÌNH BÁO HẾT HẠN -->
+    <div id="expired-screen" class="overlay" style="display: none; z-index: 1000; background-color: var(--bg-color);">
+        <img src="https://c.tenor.com/PZcZ80xH96QAAAAi/duck-magnifying-glass.gif" 
+             onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%238E8E93\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><circle cx=\'11\' cy=\'11\' r=\'8\'></circle><line x1=\'21\' y1=\'21\' x2=\'16.65\' y2=\'16.65\'></line></svg>'; this.style.width='80px'; this.style.height='80px';" 
+             referrerpolicy="no-referrer" alt="Expired" style="width: 150px; height: 150px; margin-bottom: 20px; object-fit: contain;">
+        
+        <h2 style="font-size: 20px; color: var(--text-main); margin-bottom: 8px;">Tài khoản đã hết hạn</h2>
+        <p id="expired-time-text" style="color: var(--text-secondary); font-size: 14px; margin-bottom: 20px; text-align: center; padding: 0 20px;">Tài khoản thuê của bạn đã kết thúc vào lúc...</p>
+        <button onclick="window.open('https://t.me/fafaloaa', '_blank')" style="padding: 12px 24px; background: var(--primary-color); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer;">Liên hệ Admin gia hạn</button>
+    </div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="brand-row">
+                <div class="brand-title"><i class="ri-telegram-fill" style="color: var(--primary-color); font-size: 24px;"></i> Telegram</div>
+                <button class="support-btn" onclick="window.open('https://t.me/fafaloaa', '_blank')">Hỗ trợ</button>
+            </div>
+            <div class="search-box">
+                <i class="ri-arrow-left-line" id="archive-back-btn" style="display:none; color: var(--primary-color); font-size: 20px; margin-right: 4px;" onclick="toggleArchiveView(false)"></i>
+                <i class="ri-search-line" id="search-icon"></i>
+                <input type="text" id="search-input" placeholder="Tìm kiếm">
+            </div>
+        </div>
+        <div class="countdown-bar">Thời gian thuê: <span id="time-left">...</span></div>
+        <div class="chat-list" id="chat-list"><div style="text-align: center; padding-top: 50px;"><i class="ri-loader-4-line ri-spin" style="font-size: 24px; color: var(--text-secondary)"></i></div></div>
+    </div>
+
+    <div class="main-chat" id="main-chat">
+        <div class="overlay" id="empty-state"><span style="background: rgba(28,28,30,0.8); color: white; padding: 6px 14px; border-radius: 16px; font-size: 14px;">Chọn phiên làm việc...</span></div>
+        <div class="chat-header">
+            <button class="back-btn" id="btn-back"><i class="ri-arrow-left-s-line"></i></button>
+            <div class="avatar" id="chat-header-avatar" style="width: 36px; height: 36px; font-size: 15px;">?</div>
+            <div class="chat-header-info">
+                <div class="chat-header-name" id="chat-header-title">...</div>
+                <div class="chat-header-status" id="chat-header-status">bot dịch vụ</div>
+            </div>
+            <button class="icon-btn" style="margin-left: auto; width: auto;"><i class="ri-more-2-fill"></i></button>
+        </div>
+        <div class="messages-container" id="messages-container"></div>
+        <div class="input-area-container">
+            <div id="join-panel">THAM GIA</div>
+            <div id="start-panel">BẮT ĐẦU</div>
+            <div id="channel-panel"><i class="ri-volume-mute-line" style="margin-right: 8px; font-size: 18px;"></i> Tắt tiếng</div>
+            <div class="input-area" id="input-area">
+                <button class="icon-btn" id="toggle-kbd-btn" style="display:none; color: var(--text-secondary);"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"></rect><rect x="7" y="7" width="4" height="4" rx="1" fill="currentColor" stroke="none"></rect><rect x="13" y="7" width="4" height="4" rx="1" fill="currentColor" stroke="none"></rect><rect x="7" y="13" width="4" height="4" rx="1" fill="currentColor" stroke="none"></rect><rect x="13" y="13" width="4" height="4" rx="1" fill="currentColor" stroke="none"></rect></svg></button>
+                <div class="input-wrapper" id="normal-input-wrapper">
+                    <button class="icon-btn" id="attach-btn" style="width:34px; height:34px; margin-bottom: 2px;"><i class="ri-attachment-2"></i></button>
+                    <input type="file" id="file-input" accept="image/*" style="display: none;">
+                    <textarea id="msg-input" rows="1" placeholder="Tin nhắn"></textarea>
+                    <button class="icon-btn" id="emoji-btn" style="width: 34px; height: 34px; margin-bottom: 2px;"><i class="ri-emoji-sticker-line"></i></button>
+                </div>
+                <button class="icon-btn" id="mic-btn" style="margin-bottom: 2px;"><i class="ri-mic-line"></i></button>
+                <button class="send-btn" id="send-btn"><i class="ri-arrow-up-line"></i></button>
+            </div>
+            <div class="reply-keyboard-panel" id="reply-kbd"></div>
+            <div id="emoji-picker"><span class="emoji-item">😀</span><span class="emoji-item">😂</span><span class="emoji-item">😍</span><span class="emoji-item">🥰</span><span class="emoji-item">😎</span><span class="emoji-item">😭</span><span class="emoji-item">👍</span><span class="emoji-item">❤️</span><span class="emoji-item">🔥</span><span class="emoji-item">🎉</span><span class="emoji-item">💯</span><span class="emoji-item">✅</span><span class="emoji-item">🙏</span><span class="emoji-item">👀</span><span class="emoji-item">🤔</span><span class="emoji-item">🤬</span><span class="emoji-item">🤡</span><span class="emoji-item">💩</span></div>
+        </div>
+    </div>
+
+    <script>
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                document.body.style.height = window.visualViewport.height + 'px';
+                window.scrollTo(0, 0);
+                setTimeout(() => {
+                    const msgContainer = document.getElementById('messages-container');
+                    if (msgContainer) msgContainer.scrollTop = msgContainer.scrollHeight;
+                }, 50);
+            });
+        }
+
+        const colors = ['linear-gradient(180deg, #ff885e 0%, #ff516a 100%)', 'linear-gradient(180deg, #ffcd6a 0%, #ffa85c 100%)', 'linear-gradient(180deg, #82b1ff 0%, #665fff 100%)', 'linear-gradient(180deg, #a0de7e 0%, #54cb68 100%)', 'linear-gradient(180deg, #53edd6 0%, #28c9b7 100%)', 'linear-gradient(180deg, #72d5fd 0%, #2a9ef1 100%)', 'linear-gradient(180deg, #e0a2f3 0%, #d669ed 100%)'];
+        const urlParams = new URLSearchParams(window.location.search);
+        const TOKEN = urlParams.get('token');
+        
+        // HỆ THỐNG GIAO TIẾP CLOUDFLARE ẨN TRONG MÃ GITHUB
+        const rawBackend = "https://city-boots-screen-whilst.trycloudflare.com";
+        const backendHost = rawBackend.startsWith("http") ? rawBackend : window.location.origin;
+        
+        let currentPeer = null; let globalWs = null; let isHardLocked = false; 
+        let mainChatsData = []; let archivedChatsData = [];
+        let isShowingArchive = false; let isRestrictedMode = true; 
+        const noteStorageKey = `virtual_notes_${TOKEN}`;
+        let virtualNotes = JSON.parse(localStorage.getItem(noteStorageKey)) || []; 
+        let navStack = []; let chatScrollPositions = {}; 
+        let timerInterval = null; 
+
+        window.addEventListener('popstate', function(event) { document.getElementById('btn-back').click(); });
+
+        function renderChatListUI() {
+            const chatList = document.getElementById('chat-list'); chatList.innerHTML = '';
+            if (!isShowingArchive) {
+                document.getElementById('archive-back-btn').style.display = 'none';
+                document.getElementById('search-icon').style.display = 'block';
+                const vdiv = document.createElement('div'); vdiv.className = 'chat-item'; vdiv.id = `chat-item-virtual_notes`;
+                let lastNoteText = virtualNotes.length > 0 ? virtualNotes[virtualNotes.length - 1].text : "Tin nhắn lưu trữ cục bộ...";
+                vdiv.innerHTML = `<div class="avatar" style="background: var(--primary-color);"><i class="ri-bookmark-fill"></i></div><div class="chat-info"><div class="chat-top"><div class="chat-name">Tin nhắn đã lưu</div></div><div class="chat-preview-row"><div class="chat-preview" id="preview-virtual_notes">${lastNoteText}</div></div></div>`;
+                vdiv.onclick = () => { loadChat('virtual_notes', 'Tin nhắn đã lưu', false); };
+                if (currentPeer === 'virtual_notes') vdiv.classList.add('active'); chatList.appendChild(vdiv);
+                if (!isRestrictedMode && archivedChatsData.length > 0) {
+                    let totalUnread = archivedChatsData.reduce((sum, chat) => sum + (chat.unread_count || 0), 0);
+                    const arcDiv = document.createElement('div'); arcDiv.className = 'chat-item';
+                    arcDiv.innerHTML = `<div class="avatar" style="background: var(--secondary-bg); color: var(--text-secondary);"><i class="ri-archive-drawer-fill"></i></div><div class="chat-info"><div class="chat-top"><div class="chat-name">🗃 Lưu trữ</div></div><div class="chat-preview-row"><div class="chat-preview">Nhóm, Kênh, Liên hệ cũ...</div><div class="unread-badge" style="display:${totalUnread > 0 ? 'block' : 'none'}; background: var(--text-secondary);">${totalUnread}</div></div></div>`;
+                    arcDiv.onclick = () => toggleArchiveView(true); chatList.appendChild(arcDiv);
+                }
+                mainChatsData.forEach(chat => chatList.appendChild(createChatItem(chat)));
+            } else {
+                document.getElementById('archive-back-btn').style.display = 'inline-block'; document.getElementById('search-icon').style.display = 'none';
+                if(archivedChatsData.length === 0) { chatList.innerHTML = '<div style="text-align:center; padding-top:40px; color:var(--text-secondary)">Thư mục trống</div>'; } else { archivedChatsData.forEach(chat => chatList.appendChild(createChatItem(chat))); }
             }
-            .container { text-align: center; padding: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; }
-            .icon { font-size: 60px; margin-bottom: 15px; }
-            @keyframes force-spin { 100% { transform: rotate(360deg); } }
-            .ri-spin { animation: force-spin 1s linear infinite !important; display: inline-block; }
-            .btn { margin-top: 20px; padding: 12px 24px; background: #3390EC; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; }
-            p { color: #8E8E93; font-size: 14px; line-height: 1.5; }
+        }
+
+        window.toggleArchiveView = function(show) { isShowingArchive = show; renderChatListUI(); }
+        function updateMenuPreview(peerId, textPreview, timePreview) {
+            let chatObj = mainChatsData.find(c => c.id == peerId) || archivedChatsData.find(c => c.id == peerId);
+            if (chatObj) {
+                if (textPreview && textPreview.startsWith('__CONTACT__')) textPreview = '👤 Danh bạ';
+                chatObj.last_message = textPreview || "Hình/File"; if(timePreview) chatObj.time = timePreview;
+                if(mainChatsData.includes(chatObj)) { mainChatsData = mainChatsData.filter(c => c.id != peerId); mainChatsData.unshift(chatObj); } 
+                else if(archivedChatsData.includes(chatObj)) { archivedChatsData = archivedChatsData.filter(c => c.id != peerId); archivedChatsData.unshift(chatObj); }
+                renderChatListUI();
+            }
+        }
+        function updateBackButton() {
+            if (currentPeer === null || (isHardLocked && navStack.length === 0)) document.getElementById('btn-back').style.display = 'none';
+            else document.getElementById('btn-back').style.display = 'flex';
+        }
+
+        document.getElementById('btn-back').onclick = () => {
+            window.pendingStartPayload = null; 
+            if (navStack.length > 0) {
+                if (currentPeer) chatScrollPositions[currentPeer] = document.getElementById('messages-container').scrollTop;
+                let prev = navStack.pop(); while (prev && prev.id === currentPeer && navStack.length > 0) prev = navStack.pop();
+                if (prev && prev.id !== currentPeer) { loadChat(prev.id, prev.title, true); return; }
+            }
+            if (!isHardLocked) { document.getElementById('main-chat').classList.remove('active'); currentPeer = null; navStack = []; renderChatListUI(); }
+            updateBackButton();
+        };
+
+        function renderVirtualNotes() {
+            const msgContainer = document.getElementById('messages-container'); let htmlString = "";
+            virtualNotes.forEach(msg => {
+                let textHtml = msg.text ? `<span>${formatText(msg.text)}</span>` : '';
+                let bubbleHtml = `<div class="msg-bubble">${textHtml}<span class="msg-time-badge">${msg.time}</span></div>`;
+                htmlString += `<div class="msg-wrapper out">${bubbleHtml}</div>`;
+            });
+            if (htmlString === "") msgContainer.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-secondary); font-size: 14px;">Chưa có tin nhắn nào được lưu.</div>`;
+            else msgContainer.innerHTML = htmlString;
+            if (chatScrollPositions['virtual_notes'] !== undefined) msgContainer.scrollTop = chatScrollPositions['virtual_notes'];
+            else requestAnimationFrame(() => { msgContainer.scrollTop = msgContainer.scrollHeight; });
+            document.getElementById('chat-header-status').innerText = "lưu trữ cục bộ";
+            document.getElementById('input-area').style.display = 'flex'; document.getElementById('channel-panel').style.display = 'none';
+            document.getElementById('join-panel').style.display = 'none'; document.getElementById('start-panel').style.display = 'none';
+            document.getElementById('reply-kbd').style.display = 'none'; document.getElementById('toggle-kbd-btn').style.display = 'none';
+        }
+
+        document.getElementById('channel-panel').onclick = function() {
+            if (this.innerHTML.includes('Tắt tiếng')) this.innerHTML = '<i class="ri-volume-up-line" style="margin-right: 8px; font-size: 18px;"></i> Bật tiếng';
+            else this.innerHTML = '<i class="ri-volume-mute-line" style="margin-right: 8px; font-size: 18px;"></i> Tắt tiếng';
+        };
+
+        document.getElementById('toggle-kbd-btn').onclick = () => {
+            const panel = document.getElementById('reply-kbd');
+            panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'flex' : 'none';
+            setTimeout(() => { const msgContainer = document.getElementById('messages-container'); msgContainer.scrollTop = msgContainer.scrollHeight; }, 50);
+        };
+
+        function safeSend(actionObj) {
+            if (globalWs && globalWs.readyState === WebSocket.OPEN) { try { globalWs.send(JSON.stringify(actionObj)); return true; } catch (e) { return false; } } 
+            else { showError('Mất kết nối', 'Đường truyền Tunnel đã tự ngắt. Vui lòng tải lại trang!'); return false; }
+        }
+
+        function showError(title, desc) {
+            const scr = document.getElementById('error-screen'); scr.style.display = 'flex';
+            document.getElementById('err-title').innerText = title; document.getElementById('err-desc').innerText = desc;
+        }
+
+        function getAvatarHtml(peerId, title, isHeader = false) {
+            let idAttr = isHeader ? 'id="chat-header-avatar"' : '';
+            if (peerId === 'virtual_notes') return `<div ${idAttr} class="avatar" style="background: var(--primary-color); ${isHeader ? 'width: 36px; height: 36px;' : ''}"><i class="ri-bookmark-fill"></i></div>`;
+            let initial = title ? title.charAt(0).toUpperCase() : '?'; let colorIndex = (Math.abs(peerId) || 0) % colors.length;
+            let sizeStyle = isHeader ? 'width: 36px; height: 36px;' : ''; return `<div ${idAttr} class="avatar" style="background: ${colors[colorIndex]}; ${sizeStyle}">${initial}</div>`;
+        }
+
+        let toastTimeout;
+        window.showToast = function(text) {
+            const toast = document.getElementById('toast'); toast.innerText = text; toast.style.display = 'block';
+            clearTimeout(toastTimeout); toastTimeout = setTimeout(() => { toast.style.display = 'none'; }, 2000);
+        }
+
+        window.copyToClipboard = function(text) {
+            const el = document.createElement('textarea'); el.value = text; document.body.appendChild(el); el.select();
+            document.execCommand('copy'); document.body.removeChild(el); showToast('Đã sao chép');
+        };
+
+        window.sendCommand = function(cmd) {
+            if (currentPeer === 'virtual_notes') return;
+            if (currentPeer && globalWs) { renderTemporaryMessage(cmd); safeSend({ action: 'send_message', peer_id: currentPeer, text: cmd }); }
+        };
+
+        window.pendingStartPayload = null;
+        window.resolveUsername = function(username, startPayload = null) {
+            if(!username) return; username = username.replace('@', '');
+            window.pendingStartPayload = (startPayload && startPayload !== 'null') ? startPayload : null;
+            if (currentPeer) {
+                chatScrollPositions[currentPeer] = document.getElementById('messages-container').scrollTop;
+                if (navStack.length === 0 || navStack[navStack.length - 1].id !== currentPeer) navStack.push({id: currentPeer, title: document.getElementById('chat-header-title').innerText});
+            }
+            safeSend({ action: 'resolve_username', username: username });
+        };
+
+        function formatText(text) {
+            if (!text) return "";
+            let escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            escaped = escaped.replace(/`([^`]+)`/g, '<span class="mono-text" onclick="window.copyToClipboard(\'$1\'); event.stopPropagation();">$1</span>');
+            const urlRegex = /https?:\/\/[^\s]+/g;
+            escaped = escaped.replace(urlRegex, function(url) {
+                const teleMatch = url.match(/^https?:\/\/(?:t\.me|telegram\.me)\/([a-zA-Z0-9_]{4,})(?:\?start=([^&\s]+))?$/i);
+                if (teleMatch && !url.includes('joinchat') && !url.includes('+')) {
+                    let user = teleMatch[1]; let payload = teleMatch[2] ? `'${teleMatch[2]}'` : 'null';
+                    return `<span class="msg-link" onclick="event.preventDefault(); window.resolveUsername('${user}', ${payload}); event.stopPropagation();">${url}</span>`;
+                } else { return `<span class="msg-link" onclick="event.preventDefault(); window.open('${url}', '_blank', 'noopener,noreferrer'); event.stopPropagation();">${url}</span>`; }
+            });
+            escaped = escaped.replace(/(^|\s)@([a-zA-Z0-9_]+)/g, '$1<span class="msg-link" onclick="event.preventDefault(); window.resolveUsername(\'$2\'); event.stopPropagation();">@$2</span>');
+            escaped = escaped.replace(/(^|\s)(\/[a-zA-Z0-9_]+)/g, '$1<span class="msg-link command-link" onclick="window.sendCommand(\'$2\'); event.stopPropagation();">$2</span>');
+            return escaped.replace(/\n/g, '<br>');
+        }
+        
+        // HÀM TỰ ĐỘNG CUỘN XUỐNG KHI ẢNH LOAD XONG
+        function scrollToBottom() {
+            const container = document.getElementById('messages-container');
+            if(container) container.scrollTop = container.scrollHeight;
+        }
+
+        function createMessageHTML(msgId, text, isMe, time, inlineButtons, hasMedia, localImgSrc = null, isPending = false, isHistory = true, readState = false) {
+            let mediaHtml = '';
             
-            #chat-frame {
-                width: 100%; height: 100%; border: none; display: none; display: block;
+            // XỬ LÝ ẢNH NGUYÊN BẢN (KHÔNG LÀM BUNG)
+            if (localImgSrc || (hasMedia && msgId && currentPeer)) {
+                let src = localImgSrc ? localImgSrc : `${backendHost}/media/${TOKEN}/${currentPeer}/${msgId}`;
+                mediaHtml = `
+                <div class="msg-media-container">
+                    <img src="${src}" class="msg-img" onload="scrollToBottom()" onerror="this.parentElement.innerHTML='<i class=\\'ri-file-line\\' style=\\'font-size:30px; color:rgba(255,255,255,0.5);\\'></i>'">
+                </div>`;
             }
-        </style>
-    </head>
-    <body>
-        <div class="container" id="loading">
-            <div class="icon"><i class="ri-loader-4-line ri-spin" style="color: #3390EC;"></i></div>
-            <h3 style="margin-bottom: 10px;">Đang kết nối an toàn...</h3>
-            <p>Vui lòng đợi trong giây lát</p>
-        </div>
 
-        <div class="container" id="error" style="display: none;">
-            <div class="icon"><i class="ri-server-line" style="color: #ff595a;"></i></div>
-            <h2 style="margin-bottom: 10px;">Hệ thống đang bảo trì</h2>
-            <p>Máy chủ hiện đang nâng cấp hoặc gặp sự cố mất mạng.<br>Vui lòng quay lại sau ít phút.</p>
-            <button class="btn" onclick="checkServer()">Thử kết nối lại</button>
-        </div>
+            let checkIcon = '';
+            if (isMe) {
+                if (isPending) checkIcon = '<i class="ri-time-line tick-icon"></i>';
+                else if (readState) checkIcon = '<i class="ri-check-double-line tick-icon"></i>';
+                else checkIcon = '<i class="ri-check-line tick-icon"></i>';
+            }
+            
+            let textHtml = '';
+            // GIAO DIỆN CONTACT CARD
+            if (text && text.startsWith('__CONTACT__')) {
+                let parts = text.split('__');
+                let phone = parts[2] || '';
+                let fName = parts[3] || 'Người';
+                let lName = parts[4] || '';
+                if (lName === 'None') lName = '';
+                let fullName = (fName + ' ' + lName).trim();
+                
+                textHtml = `
+                <div class="contact-card">
+                    <div class="contact-top">
+                        <div class="contact-avatar"><i class="ri-user-fill"></i></div>
+                        <div class="contact-info">
+                            <div class="contact-name">${fullName}</div>
+                            <div class="contact-phone">${phone}</div>
+                        </div>
+                    </div>
+                    <div class="contact-action">NHẮN TIN</div>
+                </div>`;
+            } else {
+                textHtml = text ? `<span>${formatText(text)}</span>` : '';
+            }
+            
+            let bubbleHtml = `<div class="msg-bubble">${mediaHtml}${textHtml}<span class="msg-time-badge">${time || ''} ${checkIcon}</span></div>`;
+            
+            let keyboardHtml = '';
+            if (inlineButtons && inlineButtons.length > 0) {
+                keyboardHtml += `<div class="inline-keyboard">`;
+                inlineButtons.forEach(row => {
+                    keyboardHtml += `<div class="ik-row">`;
+                    row.forEach(btn => {
+                        if (btn.type === 'url') {
+                            const teleMatch = btn.data.match(/(?:t\.me|telegram\.me)\/([a-zA-Z0-9_]{4,})(?:\?start=([^&\s]+))?/i);
+                            if (teleMatch && !btn.data.includes('joinchat') && !btn.data.includes('+')) {
+                                let user = teleMatch[1]; let payload = teleMatch[2] ? `'${teleMatch[2]}'` : 'null';
+                                keyboardHtml += `<button class="ik-btn" onclick="event.preventDefault(); window.resolveUsername('${user}', ${payload})">${btn.text}</button>`;
+                            } else { keyboardHtml += `<button class="ik-btn" onclick="event.preventDefault(); window.handleInlineClick(this, ${msgId}, 'url', '${btn.data}')">${btn.text}</button>`; }
+                        } else { keyboardHtml += `<button class="ik-btn" onclick="event.preventDefault(); window.handleInlineClick(this, ${msgId}, '${btn.type}', '${btn.data}')">${btn.text}</button>`; }
+                    });
+                    keyboardHtml += `</div>`;
+                });
+                keyboardHtml += `</div>`;
+            }
+            return bubbleHtml + keyboardHtml;
+        }
 
-        <iframe id="chat-frame" allow="clipboard-read; clipboard-write; microphone; camera"></iframe>
+        function createChatItem(chat) {
+            const div = document.createElement('div'); div.className = 'chat-item'; div.id = `chat-item-${chat.id}`;
+            if(chat.id == currentPeer) div.classList.add('active');
+            let typeIcon = chat.is_channel ? '<i class="ri-megaphone-fill" style="margin-right:6px; color: var(--text-secondary);"></i>' : (chat.is_group ? '<i class="ri-group-fill" style="margin-right:6px; color: var(--text-secondary);"></i>' : '');
+            let displayBadge = (chat.unread_count > 0) ? 'block' : 'none';
+            div.innerHTML = `${getAvatarHtml(chat.id, chat.title)}<div class="chat-info"><div class="chat-top"><div class="chat-name">${typeIcon}${chat.title}</div><div class="chat-time">${chat.time}</div></div><div class="chat-preview-row"><div class="chat-preview" id="preview-${chat.id}">${chat.last_message}</div><div class="unread-badge" id="badge-${chat.id}" style="display:${displayBadge}">${chat.unread_count}</div></div></div>`;
+            div.onclick = () => { loadChat(chat.id, chat.title, false); }; return div;
+        }
 
-        <script>
-            const cfUrl = "https://provinces-compute-specially-extras.trycloudflare.com";
-            const queryString = window.location.search;
+        const textarea = document.getElementById('msg-input'); const sendBtn = document.getElementById('send-btn');
+        const micBtn = document.getElementById('mic-btn'); const emojiPicker = document.getElementById('emoji-picker');
 
-            async function checkServer() {
-                document.getElementById('loading').style.display = 'flex';
-                document.getElementById('error').style.display = 'none';
-                document.getElementById('chat-frame').style.display = 'none';
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px';
+            if (this.value.trim().length > 0) { sendBtn.style.display = 'flex'; micBtn.style.display = 'none'; } 
+            else { sendBtn.style.display = 'none'; micBtn.style.display = 'flex'; }
+        });
 
-                try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 6000); 
+        document.getElementById('emoji-btn').onclick = () => { emojiPicker.style.display = emojiPicker.style.display === 'grid' ? 'none' : 'grid'; };
+        document.querySelectorAll('.emoji-item').forEach(item => { item.onclick = (e) => { textarea.value += e.target.innerText; textarea.dispatchEvent(new Event('input')); emojiPicker.style.display = 'none'; }; });
 
-                    const res = await fetch(cfUrl + "/ping_check", { signal: controller.signal });
-                    clearTimeout(timeoutId);
+        document.getElementById('join-panel').onclick = () => { if(!currentPeer) return; safeSend({ action: 'join_channel', peer_id: currentPeer }); };
+        
+        function renderTemporaryMessage(text, imgSrc = null) {
+            const t = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
+            const msgContainer = document.getElementById('messages-container');
+            if (msgContainer.innerHTML.includes("Chưa có tin nhắn")) msgContainer.innerHTML = "";
+            const div = document.createElement('div'); div.className = `msg-wrapper out msg-pending local-msg`; 
+            div.innerHTML = createMessageHTML(null, text, true, t, null, !!imgSrc, imgSrc, true, false, false);
+            msgContainer.appendChild(div); requestAnimationFrame(() => { msgContainer.scrollTop = msgContainer.scrollHeight; });
+            updateMenuPreview(currentPeer, text || "Hình/File", t);
+        }
 
-                    if (res.ok) {
-                        document.getElementById('loading').style.display = 'none';
-                        const iframe = document.getElementById('chat-frame');
-                        iframe.src = cfUrl + "/chat" + queryString;
-                        iframe.style.display = 'block';
-                    } else {
-                        throw new Error("Bad status");
+        document.getElementById('start-panel').onclick = () => {
+            if (!currentPeer) return;
+            let payload = window.pendingStartPayload; window.pendingStartPayload = null; 
+            document.getElementById('start-panel').style.display = 'none'; document.getElementById('input-area').style.display = 'flex';
+            renderTemporaryMessage('/start');
+            if (payload) safeSend({ action: 'start_bot', peer_id: currentPeer, payload: payload });
+            else safeSend({ action: 'send_message', peer_id: currentPeer, text: '/start' });
+        };
+
+        const searchInput = document.getElementById('search-input');
+        searchInput.addEventListener('keypress', function(e) { if (e.key === 'Enter') { const val = this.value.trim(); if (val.length > 2) resolveUsername(val.replace('@', '')); } });
+
+        document.getElementById('attach-btn').onclick = () => document.getElementById('file-input').click();
+        document.getElementById('file-input').onchange = function(e) {
+            const file = e.target.files[0]; if (!file || !currentPeer) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas'); const MAX_SIZE = 1200; let w = img.width, h = img.height;
+                    if (w > h && w > MAX_SIZE) { h *= MAX_SIZE / w; w = MAX_SIZE; } else if (h > MAX_SIZE) { w *= MAX_SIZE / h; h = MAX_SIZE; }
+                    canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    const fullDataUrl = canvas.toDataURL('image/jpeg', 0.8); const b64Data = fullDataUrl.split(',')[1];
+                    renderTemporaryMessage("", fullDataUrl); safeSend({ action: 'send_photo', peer_id: currentPeer, data: b64Data });
+                }; img.src = event.target.result;
+            }; reader.readAsDataURL(file); e.target.value = ''; 
+        };
+
+        if (!TOKEN) {
+            document.getElementById('error-screen').style.display = 'flex';
+        } else {
+            const wsProtocol = backendHost.startsWith("https") ? "wss:" : "ws:";
+            const wsHost = backendHost.replace(/^https?:\/\//, "");
+
+            function startApp() {
+                const ws = new WebSocket(`${wsProtocol}//${wsHost}/ws/${TOKEN}`);
+                globalWs = ws;
+                
+                ws.onclose = () => { showError('Ngắt kết nối', 'Mạng lưới Server đã ngắt. Vui lòng tải lại trang.'); };
+                setInterval(() => { if(globalWs && globalWs.readyState === WebSocket.OPEN) globalWs.send(JSON.stringify({ action: 'ping' })); }, 20000); 
+
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    
+                    if (data.type === 'error') { 
+                        alert(data.message); 
+                        ws.close(); 
+                    } 
+                    else if (data.type === 'toast') showToast(data.message);
+                    else if (data.type === 'info') {
+                        if(timerInterval) clearInterval(timerInterval);
+                        document.getElementById('expired-screen').style.display = 'none'; 
+                        
+                        const updateTimer = () => {
+                            const diff = Math.max(0, new Date(data.expire_at * 1000) - new Date());
+                            if(diff === 0) {
+                                clearInterval(timerInterval);
+                                const expDate = new Date(data.expire_at * 1000);
+                                const h = expDate.getHours().toString().padStart(2, '0');
+                                const m = expDate.getMinutes().toString().padStart(2, '0');
+                                const d = expDate.getDate().toString().padStart(2, '0');
+                                const mo = (expDate.getMonth()+1).toString().padStart(2, '0');
+                                document.getElementById('expired-time-text').innerText = `Tài khoản thuê của bạn đã kết thúc vào lúc ${h}:${m} ngày ${d}/${mo}.`;
+                                document.getElementById('expired-screen').style.display = 'flex';
+                            } else {
+                                const h = Math.floor(diff/3600000); const m = Math.floor((diff/60000)%60); const s = Math.floor((diff/1000)%60);
+                                document.getElementById('time-left').innerText = `${h}h ${m}m ${s}s`;
+                            }
+                        };
+                        updateTimer(); 
+                        timerInterval = setInterval(updateTimer, 1000);
                     }
-                } catch (e) {
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('error').style.display = 'flex';
+                    else if (data.type === 'dialogs') {
+                        mainChatsData = []; archivedChatsData = []; isRestrictedMode = data.restricted; 
+                        data.data.forEach(chat => { if (chat.is_target) mainChatsData.push(chat); else archivedChatsData.push(chat); });
+                        renderChatListUI();
+                    }
+                    else if (data.type === 'chat_history') {
+                        const msgContainer = document.getElementById('messages-container'); let htmlString = "";
+                        data.data.reverse().forEach(msg => { htmlString += `<div class="msg-wrapper ${msg.is_me ? 'out' : 'in'}" id="msg-${msg.id}">${createMessageHTML(msg.id, msg.text, msg.is_me, msg.time, msg.inline_buttons, msg.has_media, null, false, true, msg.is_read)}</div>`; });
+                        if (htmlString === "") msgContainer.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-secondary); font-size: 14px;">Chưa có tin nhắn nào.</div>`;
+                        else msgContainer.innerHTML = htmlString;
+                        requestAnimationFrame(() => { if (chatScrollPositions[data.peer_id] !== undefined) msgContainer.scrollTop = chatScrollPositions[data.peer_id]; else msgContainer.scrollTop = msgContainer.scrollHeight; });
+                        if (data.reply_keyboard !== null) renderReplyKeyboard(data.reply_keyboard);
+                        document.getElementById('chat-header-status').innerText = data.chat_status || "";
+                        
+                        let isBotWithNoHistory = (data.data.length === 0 && data.chat_status === "bot dịch vụ");
+                        if (window.pendingStartPayload || isBotWithNoHistory) {
+                            document.getElementById('input-area').style.display = 'none'; document.getElementById('channel-panel').style.display = 'none'; document.getElementById('join-panel').style.display = 'none'; document.getElementById('start-panel').style.display = 'flex';
+                        } else if(data.can_send === false && data.chat_type !== 'user') {
+                            document.getElementById('input-area').style.display = 'none'; document.getElementById('channel-panel').style.display = 'none'; document.getElementById('join-panel').style.display = 'flex'; document.getElementById('start-panel').style.display = 'none';
+                        } else {
+                            document.getElementById('join-panel').style.display = 'none'; document.getElementById('start-panel').style.display = 'none';
+                            if (data.chat_type === 'channel') { document.getElementById('input-area').style.display = 'none'; document.getElementById('channel-panel').style.display = 'flex'; } 
+                            else { document.getElementById('input-area').style.display = 'flex'; document.getElementById('channel-panel').style.display = 'none'; }
+                        }
+                        updateBackButton();
+                    } 
+                    else if (data.type === 'new_message') {
+                        if (data.peer_id == currentPeer) {
+                            const msgContainer = document.getElementById('messages-container');
+                            if (msgContainer.innerHTML.includes("Chưa có tin nhắn")) msgContainer.innerHTML = "";
+                            if(data.is_me) msgContainer.querySelectorAll('.local-msg').forEach(msg => msg.remove());
+                            if (!document.getElementById(`msg-${data.msg_id}`)) {
+                                const div = document.createElement('div'); div.className = `msg-wrapper ${data.is_me ? 'out' : 'in'}`; div.id = `msg-${data.msg_id}`;
+                                div.innerHTML = createMessageHTML(data.msg_id, data.text, data.is_me, data.time, data.inline_buttons, data.has_media, null, false, false, false);
+                                const isNearBottom = msgContainer.scrollHeight - msgContainer.scrollTop <= msgContainer.clientHeight + 150;
+                                msgContainer.appendChild(div); if (isNearBottom || data.is_me) requestAnimationFrame(() => { msgContainer.scrollTop = msgContainer.scrollHeight; });
+                            }
+                            if (data.reply_keyboard !== null) renderReplyKeyboard(data.reply_keyboard);
+                            if (!data.is_me) setTimeout(() => { safeSend({ action: 'read_chat', peer_id: currentPeer }); }, 100);
+                            document.querySelectorAll('.ik-btn').forEach(btn => { if(btn.innerHTML.includes('ri-spin')) { btn.innerHTML = btn.getAttribute('data-original-html') || btn.innerHTML.replace('<i class="ri-loader-4-line ri-spin"></i>', ''); btn.style.pointerEvents = 'auto'; } });
+                        } 
+                        
+                        let previewText = data.text || "Hình/File";
+                        if (previewText.startsWith('__CONTACT__')) previewText = '👤 Danh bạ';
+                        
+                        let chatObj = mainChatsData.find(c => c.id == data.peer_id) || archivedChatsData.find(c => c.id == data.peer_id);
+                        if (chatObj) { if (data.peer_id != currentPeer && !data.is_me) chatObj.unread_count = (chatObj.unread_count || 0) + 1; updateMenuPreview(data.peer_id, previewText, data.time); } 
+                        else { let newChat = {id: data.peer_id, title: data.title||"Người dùng", last_message: previewText, time: data.time, unread_count: data.is_me ? 0 : 1, is_channel: false, is_group: false}; archivedChatsData.unshift(newChat); renderChatListUI(); }
+                    }
+                    else if (data.type === 'update_message') {
+                        if (data.peer_id == currentPeer) {
+                            const existingMsg = document.getElementById(`msg-${data.msg_id}`);
+                            if (existingMsg) existingMsg.innerHTML = createMessageHTML(data.msg_id, data.text, data.is_me, data.time, data.inline_buttons, data.has_media, null, false, true, true);
+                            if(data.reply_keyboard !== null) renderReplyKeyboard(data.reply_keyboard);
+                        }
+                    }
+                    else if (data.type === 'chat_read') {
+                        if (data.peer_id == currentPeer) document.querySelectorAll('.ri-check-line.tick-icon').forEach(icon => { icon.classList.remove('ri-check-line'); icon.classList.add('ri-check-double-line'); });
+                        let chatObj = mainChatsData.find(c => c.id == data.peer_id) || archivedChatsData.find(c => c.id == data.peer_id);
+                        if (chatObj && chatObj.unread_count !== 0) { chatObj.unread_count = 0; renderChatListUI(); }
+                    }
+                    else if (data.type === 'resolved_peer') {
+                        let chatObj = mainChatsData.find(c => c.id == data.peer_id) || archivedChatsData.find(c => c.id == data.peer_id);
+                        if (!chatObj) {
+                            let newChat = {id: data.peer_id, title: data.title, last_message: '', time: '', unread_count: 0, is_channel: data.is_channel, is_group: data.is_group};
+                            if (data.is_target) mainChatsData.unshift(newChat); else archivedChatsData.unshift(newChat);
+                            renderChatListUI();
+                        }
+                        if(window.innerWidth <= 768) document.getElementById('main-chat').classList.add('active');
+                        document.getElementById('chat-header-status').innerText = data.is_channel ? "kênh thông báo" : (data.is_group ? "nhóm" : "bot dịch vụ");
+                        loadChat(data.peer_id, data.title, false);
+                    }
+                    else if (data.type === 'resolve_error') { window.pendingStartPayload = null; showToast(data.message); if (navStack.length > 0 && document.getElementById('messages-container').innerHTML.includes('ri-loader-4-line')) document.getElementById('btn-back').click(); }
+                    else if (data.type === 'joined_error') { showToast(data.message); }
+                    else if (data.type === 'joined_success') {
+                        document.getElementById('join-panel').style.display = 'none';
+                        if (data.chat_type === 'channel') { document.getElementById('input-area').style.display = 'none'; document.getElementById('channel-panel').style.display = 'flex'; } 
+                        else { document.getElementById('input-area').style.display = 'flex'; document.getElementById('channel-panel').style.display = 'none'; }
+                    }
+                };
+
+                window.loadChat = function(peerId, title, isBack = false) {
+                    if (peerId === 'virtual_notes') {
+                        if (currentPeer && !isBack) { chatScrollPositions[currentPeer] = document.getElementById('messages-container').scrollTop; if (navStack.length === 0 || navStack[navStack.length - 1].id !== currentPeer) navStack.push({id: currentPeer, title: document.getElementById('chat-header-title').innerText}); }
+                        if (!currentPeer && !isBack) navStack = []; currentPeer = 'virtual_notes';
+                        document.getElementById('chat-header-title').innerText = title; document.getElementById('chat-header-avatar').outerHTML = getAvatarHtml(peerId, title, true);
+                        document.getElementById('empty-state').style.display = 'none'; if(window.innerWidth <= 768) document.getElementById('main-chat').classList.add('active');
+                        updateBackButton(); renderVirtualNotes(); renderChatListUI(); return;
+                    }
+                    if (currentPeer && !isBack) { chatScrollPositions[currentPeer] = document.getElementById('messages-container').scrollTop; if (navStack.length === 0 || navStack[navStack.length - 1].id !== currentPeer) navStack.push({id: currentPeer, title: document.getElementById('chat-header-title').innerText}); }
+                    if (!currentPeer && !isBack) navStack = []; currentPeer = peerId;
+                    document.getElementById('chat-header-title').innerText = title; document.getElementById('chat-header-status').innerText = ""; document.getElementById('chat-header-avatar').outerHTML = getAvatarHtml(peerId, title, true);
+                    document.getElementById('empty-state').style.display = 'none'; if(window.innerWidth <= 768) document.getElementById('main-chat').classList.add('active');
+                    updateBackButton(); renderChatListUI();
+                    document.getElementById('messages-container').innerHTML = '<div style="text-align:center; padding:30px;"><i class="ri-loader-4-line ri-spin" style="font-size:30px; color:var(--text-secondary)"></i></div>';
+                    document.getElementById('reply-kbd').style.display = 'none'; document.getElementById('input-area').style.display = 'none'; document.getElementById('join-panel').style.display = 'none'; document.getElementById('start-panel').style.display = 'none'; document.getElementById('channel-panel').style.display = 'none';
+                    safeSend({ action: 'load_chat', peer_id: peerId });
+                }
+
+                function renderReplyKeyboard(keyboard) {
+                    const panel = document.getElementById('reply-kbd'); panel.innerHTML = '';
+                    if (keyboard && keyboard.length > 0) {
+                        document.getElementById('toggle-kbd-btn').style.display = 'flex';
+                        keyboard.forEach(row => {
+                            let html = '<div class="rk-row">';
+                            row.forEach(btn => {
+                                let text = typeof btn === 'string' ? btn : btn.text; let isContact = typeof btn === 'object' && btn.is_contact;
+                                if (isContact) html += `<button class="rk-btn" style="background: rgba(51, 144, 236, 0.2); color: var(--primary-color);" onclick="window.sendFakeContact('${text}')"><i class="ri-contacts-book-2-fill"></i> ${text}</button>`;
+                                else html += `<button class="rk-btn" onclick="window.sendReplyBtnText('${text}')">${text}</button>`;
+                            }); panel.innerHTML += html + '</div>';
+                        }); panel.style.display = 'flex';
+                    } else { document.getElementById('toggle-kbd-btn').style.display = 'none'; panel.style.display = 'none'; }
+                }
+                window.sendFakeContact = function(text) { if(currentPeer) safeSend({ action: 'send_fake_contact', peer_id: currentPeer, text: text }); }
+                window.sendReplyBtnText = function(text) { if(currentPeer) { renderTemporaryMessage(text); safeSend({ action: 'send_message', peer_id: currentPeer, text: text }); } }
+            }
+
+            function checkConnection() {
+                fetch(`${host}/ping_check`)
+                    .then(res => { if(res.ok) startApp(); else throw new Error("Not ok"); })
+                    .catch(err => { setTimeout(checkConnection, 2000); });
+            }
+            checkConnection();
+        }
+
+        window.handleInlineClick = function(btn, msgId, type, data) {
+            if (!currentPeer || !globalWs) return;
+            const originalHTML = btn.getAttribute('data-original-html') || btn.innerHTML;
+            if (!btn.hasAttribute('data-original-html')) btn.setAttribute('data-original-html', originalHTML);
+            btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i>'; btn.style.pointerEvents = 'none';
+            if (type === 'url') { setTimeout(() => { window.open(data, '_blank', 'noopener,noreferrer'); }, 300); setTimeout(() => { if (document.body.contains(btn)) { btn.innerHTML = originalHTML; btn.style.pointerEvents = 'auto'; } }, 1000); } 
+            else { safeSend({ action: 'click_button', peer_id: currentPeer, msg_id: msgId, data: data }); setTimeout(() => { if (document.body.contains(btn) && btn.innerHTML.includes('ri-spin')) { btn.innerHTML = originalHTML; btn.style.pointerEvents = 'auto'; } }, 2000); }
+        }
+
+        function sendMessageAction() {
+            const text = textarea.value.trim();
+            if (text) {
+                const t = `${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}`;
+                if (currentPeer === 'virtual_notes') {
+                    virtualNotes.push({text: text, time: t, isMe: true}); localStorage.setItem(noteStorageKey, JSON.stringify(virtualNotes)); renderVirtualNotes();
+                    textarea.value = ''; textarea.style.height = 'auto'; sendBtn.style.display = 'none'; micBtn.style.display = 'flex';
+                    let preview = document.getElementById('preview-virtual_notes'); if(preview) preview.innerText = text; return;
+                }
+                if (currentPeer && globalWs) {
+                    renderTemporaryMessage(text); safeSend({ action: 'send_message', peer_id: currentPeer, text: text });
+                    textarea.value = ''; textarea.style.height = 'auto'; sendBtn.style.display = 'none'; micBtn.style.display = 'flex'; emojiPicker.style.display = 'none';
                 }
             }
-            
-            checkServer();
-        </script>
-    </body>
-    </html>
-    
+        }
+        sendBtn.addEventListener('click', sendMessageAction);
+        textarea.addEventListener('keypress', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessageAction(); } });
+    </script>
+</body>
+</html>
