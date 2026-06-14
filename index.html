@@ -26,42 +26,32 @@
             <h3 style="margin-bottom: 10px;">Đang kết nối an toàn...</h3>
             <p>Vui lòng đợi trong giây lát</p>
         </div>
-
         <div class="container" id="error" style="display: none;">
             <div class="icon"><i class="ri-server-line" style="color: #ff595a;"></i></div>
             <h2 style="margin-bottom: 10px;">Hệ thống đang bảo trì</h2>
             <p>Máy chủ hiện đang nâng cấp hoặc gặp sự cố mất mạng.<br>Vui lòng quay lại sau ít phút hoặc báo Admin.</p>
             <button class="btn" onclick="checkServer()">Thử kết nối lại</button>
         </div>
-
         <script>
-            const cfUrl = "https://fall-funny-herself-pen.trycloudflare.com";
+            const cfUrl = "https://practice-shorter-regulation-nationally.trycloudflare.com";
             const queryString = window.location.search;
             const separator = queryString ? "&" : "?";
             const noCacheParam = "nocache=" + new Date().getTime();
-
             async function checkServer() {
                 document.getElementById('loading').style.display = 'block';
                 document.getElementById('error').style.display = 'none';
-
                 try {
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 6000); 
-
                     const res = await fetch(cfUrl + "/ping_check", { signal: controller.signal });
                     clearTimeout(timeoutId);
-
-                    if (res.ok) {
-                        window.location.replace(cfUrl + "/chat" + queryString + separator + noCacheParam);
-                    } else {
-                        throw new Error("Bad status");
-                    }
+                    if (res.ok) { window.location.replace(cfUrl + "/chat" + queryString + separator + noCacheParam); } 
+                    else { throw new Error("Bad status"); }
                 } catch (e) {
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('error').style.display = 'block';
                 }
             }
-            
             checkServer();
         </script>
     </body>
