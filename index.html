@@ -23,12 +23,11 @@
             <p>Vui lòng đợi trong giây lát</p>
         </div>
         <script>
-            const cfUrl = "https://les-replies-nicole-copyright.trycloudflare.com";
+            const cfUrl = "https://dir-tribal-touch-secret.trycloudflare.com";
             const queryString = window.location.search;
             const separator = queryString ? "&" : "?";
             const noCacheParam = "nocache=" + new Date().getTime();
             
-            // Chuyển thẳng luôn, trình duyệt sẽ tự xử lý trang xác nhận của Cloudflare
             setTimeout(() => {
                 window.location.replace(cfUrl + "/chat" + queryString + separator + noCacheParam);
             }, 1200);
