@@ -1,37 +1,27 @@
-
-    <!DOCTYPE html>
-    <html lang="vi">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-        <title>Hệ thống Telegram</title>
-        <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
-        <style>
-            body { background: #000; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: -apple-system, sans-serif; margin: 0; }
-            .container { text-align: center; padding: 20px; }
-            .icon { font-size: 60px; margin-bottom: 15px; color: #3390EC; }
-            @keyframes force-spin { 100% { transform: rotate(360deg); } }
-            .ri-spin { animation: force-spin 1s linear infinite !important; display: inline-block; }
-            p { color: #8E8E93; font-size: 14px; line-height: 1.5; }
-        </style>
-    </head>
-    <body>
-        <div class="container" id="loading">
-            <div class="icon"><i class="ri-loader-4-line ri-spin"></i></div>
-            <h3 style="margin-bottom: 10px;">Đang kết nối vào hệ thống...</h3>
-            <p>Vui lòng đợi trong giây lát</p>
-        </div>
-        <script>
-            const cfUrl = "https://carried-allocated-feof-measurement.trycloudflare.com";
-            const queryString = window.location.search;
-            const separator = queryString ? "&" : "?";
-            const noCacheParam = "nocache=" + new Date().getTime();
-            
-            setTimeout(() => {
-                window.location.replace(cfUrl + "/chat" + queryString + separator + noCacheParam);
-            }, 1200);
-        </script>
-    </body>
-    </html>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đang chuyển hướng...</title>
+    <style>
+        body { background: #000; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: -apple-system, sans-serif; margin: 0; }
+        .container { text-align: center; padding: 20px; }
+        p { color: #8E8E93; font-size: 14px; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h3 style="margin-bottom: 10px;">Đang kết nối vào hệ thống...</h3>
+        <p>Vui lòng đợi trong giây lát</p>
+    </div>
     
+    <script>
+        const domainMoi = "https://dichvuthuetele.online/chat";
+        
+        const queryString = window.location.search;
+        
+        window.location.replace(domainMoi + queryString);
+    </script>
+</body>
+</html>
